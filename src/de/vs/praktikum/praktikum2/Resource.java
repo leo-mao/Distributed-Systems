@@ -7,6 +7,10 @@ package de.vs.praktikum.praktikum2;
 public class Resource {
     private String id;
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public Resource(String id){
         this.id = id;
     }

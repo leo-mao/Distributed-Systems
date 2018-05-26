@@ -108,8 +108,7 @@ public class VSServerMaster extends Thread{
      */
     public void printAvailableServerlist(){
         System.out.println("-----available Slave ------"+df.format(new Date())+"------");
-        availableServerMap.keySet().forEach(System.out::println);
-        System.out.println();
+        System.out.println(availableServerMap);
     }
     public void printResourceDistibution(){
 //        System.out.println("-----Resource Distribution ----"+df.format(new Date())+"------");

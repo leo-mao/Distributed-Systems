@@ -1,5 +1,7 @@
 package de.vs.praktikum.praktikum2;
 
+import java.io.*;
+import java.nio.Buffer;
 import java.util.*;
 
 /**
@@ -28,7 +30,7 @@ public class VSServerManager extends Thread{
         if (!serverMap.containsKey(serverName)){
             VSServerSlave slave = new VSServerSlave(serverName);
             serverMap.put(slave.getServerName(), slave);
-            slave.run();
+            slave.start();
             return true;
         }
         return false;
@@ -37,7 +39,7 @@ public class VSServerManager extends Thread{
         if (!serverMap.containsKey(serverName)){
             VSServerSlave slave = new VSServerSlave(serverName);
             serverMap.put(slave.getServerName(), slave);
-            slave.run();
+            slave.start();
             return true;
         }
         return false;
@@ -46,6 +48,8 @@ public class VSServerManager extends Thread{
         VSServerSlave slave = serverMap.get(name);
         if (slave != null){
             slave.exit();
+            //TODO  receive message to master
+            //serverMap.remove(name);
         }
     }
 
@@ -69,6 +73,15 @@ public class VSServerManager extends Thread{
     }
 
     /**
+     * Generate a resource with the parameter resourceid
+     * @param resourceid
+     * @return
+     */
+    public Resource generateResource(String resourceid){
+        Resource resource = new Resource(resourceid);
+        return resource;
+    }
+    /**
      *
      */
     public void addResource(){
@@ -77,30 +90,41 @@ public class VSServerManager extends Thread{
         resourceList.add(resource);
     }
 
+    public void addResource(String resourceid){
+        Resource resource = generateResource(resourceid);
+        master.receiveResource(resource);
+        resourceList.add(resource);
+    }
+
     public void run(){
         while (true){
             Scanner s = new Scanner(System.in);
             String input = s.nextLine();
-            System.out.println(input);
             String[] commands = input.toUpperCase().split(" ");
-            for(String item:commands){
-                System.out.print(item);
-            }
-
             switch (commands[0]){
                 case "ADD":
                     if (commands[1].equals("SERVER")){
-                        instance.addServerSlave();
+                        if(commands.length == 2) instance.addServerSlave();
+                        else if(commands.length == 3)instance.addServerSlave(commands[2]);
+                        else {
+                            System.out.println("Add Server failed");
+                            break;
+                        }
                     }
                     else if (commands[1].equals("RESOURCE")){
-                        instance.addResource();
+                        if(commands.length == 2) instance.addResource();
+                        else if(commands.length == 3)instance.addResource(commands[2]);
+                        else{
+                            System.out.println("Add Resource failed");
+                            break;
+                        }
+
                     }
                     break;
                 case "REMOVE":
                     if (commands[1].equals("SERVER")){
                         if (commands[2].isEmpty() || commands[2].length() == 0 || !serverMap.containsKey(commands[2])){
                             System.out.println("No Server Name!");
-                            //TODO random removal
                             break;
                         }
                         instance.removeServerSlave(commands[2]);
@@ -121,10 +145,25 @@ public class VSServerManager extends Thread{
         }
     }
     public void printAllResouce(){
-        resourceList.forEach(System.out::println);
+        resourceList.forEach(resource -> System.out.println(resource.getId()));
     }
 
-    public static void main(String[] args){
+    /**
+     * read 12 initial resources from file.
+     * @param filename
+     * @throws IOException
+     */
+    private void readResourceList(String filename) throws IOException {
+        File file = new File(filename);
+        BufferedReader reader  = new BufferedReader(new FileReader(file));
+        String tempString;
+        while((tempString =reader.readLine())!= null){
+            addResource(tempString);
+        }
+        reader.close();
+    }
+
+    public static void main(String[] args) throws IOException {
         VSServerMaster master = VSServerMaster.getInstance();
         VSServerManager instance = VSServerManager.getInstance();
         master.start();
@@ -134,8 +173,12 @@ public class VSServerManager extends Thread{
             instance.addServerSlave();
         }
         //Have 10 different files at the beginning
-        for(int i=0; i<1; i++){
-            instance.addResource();
-        }
+//        for(int i=0; i<10; i++){
+//            instance.addResource();
+//        }
+        instance.readResourceList("resource");
+        System.out.println("the initial resourceids are:" + instance.resourceList.size());
     }
+
+
 }
