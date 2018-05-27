@@ -13,37 +13,41 @@ public class VSServerMaster extends Thread{
     static VSServerMaster getInstance(){
         return instance;
     }
-    private Map<String, VSServerSlave> availableServerMap = new HashMap<>();
+    private Map<String, VSServerSlave> serverSlaveMap = new HashMap<>();
+    private Map<String, Date> lastHeartbeatAvailableServer = new HashMap<>();
     /**
      *     resouceLocation contains <resouce-id, serverObject> as value pairs.
      *     It indicates where the specific resource is stored.
      */
     private Map<String, VSServerSlave> resourceDistribution = new HashMap<String, VSServerSlave>();
-
-
     private SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
-    /*
-    Add a new server to the available server set.
-     */
-    boolean addServerSlave(VSServerSlave slave){
-        availableServerMap.put(slave.getServerName(), slave);
-        System.out.println("Add a new slave: "+slave.getServerName());
-        printAvailableServerlist();
-        return true;
+    private Timer cleanup;
+    public Map<String, Date> getLastHeartbeatAvailableServer() {
+        return lastHeartbeatAvailableServer;
     }
 
-    /**
-     *     Update the available server set.
-     * @param slavename
-     * @return if remove succeeded.
-     */
-    boolean removeServerSlave(String slavename){
-        if (availableServerMap.keySet().contains(slavename)){
-            availableServerMap.remove(slavename);
-            return true;
-        }
-        return false;
-    }
+    /*
+        Add a new server to the available server set.
+         */
+//    boolean addServerSlave(VSServerSlave slave){
+//        serverSlaveMap.put(slave.getServerName(), slave);
+//        System.out.println("Add a new slave: "+slave.getServerName());
+//        printAvailableServerlist();
+//        return true;
+//    }
+//
+//    /**
+//     *     Update the available server set.
+//     * @param slavename
+//     * @return if remove succeeded.
+//     */
+//    boolean removeServerSlave(String slavename){
+//        if (serverSlaveMap.keySet().contains(slavename)){
+//            serverSlaveMap.remove(slavename);
+//            return true;
+//        }
+//        return false;
+//    }
 
     /**
      *     Redistribute resources from a specific server to other servers.
@@ -52,6 +56,17 @@ public class VSServerMaster extends Thread{
     private void reassignResouces(String DeadServer){
     }
 
+    /**
+     * Receive heartbeat from slaves, maintain the slave list
+     * @return
+     */
+
+    boolean slaveRegister(String slaveName){
+//        if (serverSlaveMap.containsKey(slaveName)){
+            lastHeartbeatAvailableServer.put(slaveName, new Date());
+//        }
+        return false;
+    }
 
 
     /**
@@ -61,28 +76,32 @@ public class VSServerMaster extends Thread{
      */
     private boolean assignResource(Resource resource){
         String resourceId = resource.getId();
-        List<String> availableSeverList = new ArrayList<>(availableServerMap.keySet());
+        List<String> availableSeverList = new ArrayList<>(serverSlaveMap.keySet());
         // TODO: Load balancing
         if (!availableSeverList.isEmpty()){
             int hash = resourceId.hashCode();
             int destServerSlaveIndex= (hash & Integer.MAX_VALUE) % availableSeverList.size();
             String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
-            VSServerSlave destServerSlave = availableServerMap.get(destServerSlaveName);
-            if (availableServerMap.get(destServerSlaveName).addResouce(resource)){
+            System.out.println("Get a valid destServer: " + destServerSlaveName+":"+  serverSlaveMap.get(destServerSlaveName));
+            VSServerSlave destServerSlave = serverSlaveMap.get(destServerSlaveName);
+            if (serverSlaveMap.get(destServerSlaveName).storeResouce(resource)){
                 resourceDistribution.put(resourceId, destServerSlave);
                 System.out.println("add resource" + hash + "to " + destServerSlaveName);
                 return true;
             }
+        }
+        else{
+            System.out.println("No valid server slaves, please add at least a server slave");
         }
         return false;
     }
 
     /**
      *
-     * @return getAvailableServerMap
+     * @return getServerSlaveMap
      */
-    public Map<String, VSServerSlave> getAvailableServerMap() {
-        return availableServerMap;
+    public Map<String, VSServerSlave> getServerSlaveMap() {
+        return serverSlaveMap;
     }
     public void getAvailableServerList(){
         printAvailableServerlist();
@@ -91,6 +110,8 @@ public class VSServerMaster extends Thread{
      * Thread run
      */
     public void run() {
+        cleanup = new Timer("cleanup");
+        cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 0, 1000 * 5);
         while (true){
             try {
 //                printAvailableServerlist();
@@ -108,11 +129,11 @@ public class VSServerMaster extends Thread{
      */
     public void printAvailableServerlist(){
         System.out.println("-----available Slave ------"+df.format(new Date())+"------");
-        System.out.println(availableServerMap);
+        System.out.println(lastHeartbeatAvailableServer);
     }
     public void printResourceDistibution(){
-//        System.out.println("-----Resource Distribution ----"+df.format(new Date())+"------");
-//        availableServerMap.entrySet().forEach(System.out::println);
+        System.out.println("-----Resource Distribution ----"+df.format(new Date())+"------");
+//        serverSlaveMap.entrySet().forEach(System.out::println);
 //        System.out.println();
         System.out.println(resourceDistribution);
     }

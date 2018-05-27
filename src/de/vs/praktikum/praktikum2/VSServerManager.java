@@ -10,7 +10,7 @@ import java.util.*;
  */
 public class VSServerManager extends Thread{
     private static VSServerManager instance = new VSServerManager();
-    private int nameCounter = 0;
+    private int ServerDefaultNameIndex = 0;
     private Map<String, VSServerSlave> serverMap = new HashMap<>();
     private VSServerMaster master = VSServerMaster.getInstance();
 
@@ -25,8 +25,8 @@ public class VSServerManager extends Thread{
         return instance;
     }
     public boolean addServerSlave(){
-        nameCounter++;
-        String serverName = "ns"+ nameCounter +".example.com";
+        ServerDefaultNameIndex++;
+        String serverName = "ns"+ ServerDefaultNameIndex +".example.com";
         if (!serverMap.containsKey(serverName)){
             VSServerSlave slave = new VSServerSlave(serverName);
             serverMap.put(slave.getServerName(), slave);
@@ -49,7 +49,7 @@ public class VSServerManager extends Thread{
         if (slave != null){
             slave.exit();
             //TODO  receive message to master
-            //serverMap.remove(name);
+//            serverMap.remove(name);
         }
     }
 
@@ -104,7 +104,10 @@ public class VSServerManager extends Thread{
             switch (commands[0]){
                 case "ADD":
                     if (commands[1].equals("SERVER")){
-                        if(commands.length == 2) instance.addServerSlave();
+                        if(commands.length == 2) {
+                            instance.addServerSlave();
+                            System.out.println("Add a server slave");
+                        }
                         else if(commands.length == 3)instance.addServerSlave(commands[2]);
                         else {
                             System.out.println("Add Server failed");
@@ -170,7 +173,10 @@ public class VSServerManager extends Thread{
         instance.start();
         //Have 3 Server at the beginning
         for(int i=0; i<3; i++){
-            instance.addServerSlave();
+            if (instance.addServerSlave()) {
+                System.out.println("Add a server slave");
+            }
+            else System.out.println("Add a server failed");
         }
         //Have 10 different files at the beginning
 //        for(int i=0; i<10; i++){

@@ -1,8 +1,6 @@
 package de.vs.praktikum.praktikum2;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Yang Mao on 5/24/18.
@@ -10,6 +8,7 @@ import java.util.Set;
  */
 public class VSServerSlave extends Thread{
     private String name;
+    private Timer heartbeat;
     /*
         Create a server.
     */
@@ -27,7 +26,7 @@ public class VSServerSlave extends Thread{
      */
     private boolean exit = false;
     private Map<String, Resource> resourceHashMap = new HashMap<String, Resource>();
-    public boolean addResouce(Resource resource){
+    public boolean storeResouce(Resource resource){
         resourceHashMap.put(resource.getId(), resource);
         return true;
     }
@@ -48,8 +47,13 @@ public class VSServerSlave extends Thread{
         return null;
     }
     public void run(){
+        heartbeat = new Timer("heartbeat-"+name);
+        heartbeat.schedule(new HeartbeatTimerTask(name), 0,1000 * 2);
+//        System.out.println(new Date().getTime());
+        System.out.println("Slave "+name+" start running!");
         while (!exit){
             try{
+                //10s
                 sleep(10000);
             }
             catch (Exception e){
