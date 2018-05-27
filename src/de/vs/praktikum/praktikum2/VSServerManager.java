@@ -50,13 +50,13 @@ public class VSServerManager extends Thread{
             }
     }
 
-    public void removeServerSlave(String name){
+    public void removeServerSlave(String name) throws InterruptedException {
         VSServerSlave slave = serverMap.get(name);
-        if (slave != null){
-            slave.reassignAndexit(name);
-            serverMap.remove(name);
-            //TODO  receive message to master
 
+        if (slave!= null){
+            System.out.println("sds");
+            slave.exit();
+            serverMap.remove(name);
         }
     }
 
@@ -104,7 +104,7 @@ public class VSServerManager extends Thread{
     }
 
     public void run(){
-        for(int i=0; i<3; i++)instance.addServerSlave();
+        for(int i=0; i<3; i++) {instance.addServerSlave();}
         try {
             instance.readResourceList("resource");
         } catch (IOException e) {
@@ -141,7 +141,11 @@ public class VSServerManager extends Thread{
                     break;
                 case "remove":
                     if (commands[1].equals("server")){
-                        instance.removeServerSlave(commands[2]);
+                        try {
+                            instance.removeServerSlave(commands[2]);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         break;
                     }
                     else if (commands[1].equals("resource")){

@@ -13,9 +13,10 @@ public class InvalidSlaveCleanupTimeTask extends TimerTask {
        Map<String, Date> heartbeatMap = VSServerMaster.getInstance().getLastHeartbeatAvailableServer();
         //System.out.println("wait");
         for(String slaveName: heartbeatMap.keySet()){
-            if ((new Date().getTime() - heartbeatMap.get(slaveName).getTime())> 1000 * 3){
+            if ((new Date().getTime() - heartbeatMap.get(slaveName).getTime())> 5000){
                 heartbeatMap.remove(slaveName);
                 System.out.println("!!!!!!Server slave "+ slaveName +" broke down!!!!!!");
+                System.out.println("lastHeartbeatAvailableServer number ："+VSServerMaster.getInstance().getLastHeartbeatAvailableServer());
             }
         }
     }

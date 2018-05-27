@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VSServerSlave extends Thread{
     private String name;
     private Timer heartbeat;
+
     /*
         Create a server.
     */
@@ -63,7 +64,7 @@ public class VSServerSlave extends Thread{
     }
     public void run(){
         heartbeat = new Timer("heartbeat-"+name);
-        heartbeat.schedule(new HeartbeatTimerTask(name), 0,1000 * 2);
+        heartbeat.schedule(new HeartbeatTimerTask(name), 0,2000 );
         VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
         VSServerMaster.getInstance().receiveServer(this);
         System.out.println("Slave "+name+" start running!");
@@ -71,7 +72,7 @@ public class VSServerSlave extends Thread{
         while (!exit){
             try{
                 //10s
-                sleep(10000);
+               sleep(1000);
             }
             catch (Exception e){
                 e.printStackTrace();
@@ -81,19 +82,16 @@ public class VSServerSlave extends Thread{
         }
     }
 
-    void reassignAndexit(String ServerName){
-        List<Resource> resourcelist=new ArrayList<>();
-       if(name.equals(ServerName)) {
-           for (Resource resource : resourceHashMap.values()) {
-               resourcelist.add(resource);
+    void exit(){
+        heartbeat.cancel();
+           try {
+               VSServerMaster.getInstance().receiveResource(new ArrayList<>(resourceHashMap.values()),this.name);
+           } catch (InterruptedException e) {
+               e.printStackTrace();
            }
-       }
-       if(resourcelist.size()!= 0){
-           VSServerMaster.getInstance().getServerSlaveMap().remove(ServerName);
-           VSServerMaster.getInstance().receiveResource(resourcelist);
-           heartbeat.cancel();
+
            exit = true;
         }
 
     }
-}
+

@@ -127,7 +127,7 @@ public class VSServerMaster extends Thread{
      */
     public void run() {
         cleanup = new Timer("cleanup");
-        cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 0, 1000 * 5);
+        cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 0, 500);
         while (true){
             try {
 //                printAvailableServerlist();
@@ -148,24 +148,47 @@ public class VSServerMaster extends Thread{
         System.out.println(lastHeartbeatAvailableServer);
     }
 
-    public void printResourceDistibution(){
-        System.out.println("-----Resource Distribution ----"+df.format(new Date())+"------");
-//        serverSlaveMap.entrySet().forEach(System.out::println);
-        System.out.println("ResourceID---------------Servername");
-        for (String resourceId: resourceDistribution.keySet()){
-        System.out.println(resourceId + "------"+ resourceDistribution.get(resourceId).getServerName() );
-        }
+    public void printResourceDistibution() {
+        System.out.println("-----Resource Distribution ----" + df.format(new Date()) + "------");
 
+        System.out.println("ResourceID---------------Servername");
+        for (String resourceId : resourceDistribution.keySet()) {
+            System.out.println(resourceId + "------" + resourceDistribution.get(resourceId).getServerName());
+//        Map<VSServerSlave,String> serverResourceIdMap = new HashMap<>();
+//        for(Map.Entry<String,VSServerSlave> entry :resourceDistribution.entrySet()){
+//            serverResourceIdMap.put(entry.getValue(), entry.getKey());
+//        }System.out.println(serverResourceIdMap);
+        }
     }
+
+
 
     public void receiveResource(Resource resource){
         assignResource(resource);
     }
-    public void receiveResource(List<Resource> resourceList){
-        for (Resource resource:resourceList) {
-            assignResource(resource);
+    public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
+        long time = lastHeartbeatAvailableServer.get(serverName).getTime() - 5000;
+        lastHeartbeatAvailableServer.put(serverName,new Date(time));
+        manualCleanup();
+        if(serverSlaveMap.keySet().size()!=(lastHeartbeatAvailableServer.keySet().size())){
+            serverSlaveMap.remove(serverName);
+            System.out.println("sdmsl");
+            for (Resource resource : resourceList) {
+                assignResource(resource);
+            }
         }
+        else System.out.println("buchenggong");
+    }
 
+    public void manualCleanup(){
+        for(String slaveName: lastHeartbeatAvailableServer.keySet()){
+            if ((new Date().getTime() - lastHeartbeatAvailableServer.get(slaveName).getTime())> 3000){
+                lastHeartbeatAvailableServer.remove(slaveName);
+                System.out.println("!!!!!!Server slave "+ slaveName +" broke down!!!!!!");
+                System.out.println("lastHeartbeatAvailableServer number ："+ lastHeartbeatAvailableServer);
+                System.out.println(serverSlaveMap);
+            }
+        }
     }
 
     public void reassignResouces() {
@@ -188,6 +211,7 @@ public class VSServerMaster extends Thread{
 
     }
 }
+
 
 
 //TODO Exception
