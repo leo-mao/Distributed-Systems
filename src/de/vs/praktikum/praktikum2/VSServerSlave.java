@@ -1,6 +1,7 @@
 package de.vs.praktikum.praktikum2;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Yang Mao on 5/24/18.
@@ -26,6 +27,10 @@ public class VSServerSlave extends Thread{
      */
     private boolean exit = false;
     private Map<String, Resource> resourceHashMap = new HashMap<String, Resource>();
+    public Map<String, Resource> getResourceHashMap(){
+        return resourceHashMap;
+
+    }
     public boolean storeResouce(Resource resource){
         resourceHashMap.put(resource.getId(), resource);
         return true;
@@ -40,6 +45,16 @@ public class VSServerSlave extends Thread{
     public Set<String> getResouceSet(){
         return resourceHashMap.keySet();
     }
+
+    public Set<Resource> getResourceSet() {
+        return new HashSet<Resource>(resourceHashMap.values());
+    }
+
+    //    public set<Resource> callBackResourceSet(String serverName) {
+//        for ( VSServerSlave server : resourceDistribution.values()){
+//            if(serverName == server.getServerName())
+//
+//    }
     public Resource getResouce(String id){
         if (resourceHashMap.containsKey(id)){
             return resourceHashMap.get(id);
@@ -49,8 +64,10 @@ public class VSServerSlave extends Thread{
     public void run(){
         heartbeat = new Timer("heartbeat-"+name);
         heartbeat.schedule(new HeartbeatTimerTask(name), 0,1000 * 2);
-//        System.out.println(new Date().getTime());
+        VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
+        VSServerMaster.getInstance().receiveServer(this);
         System.out.println("Slave "+name+" start running!");
+
         while (!exit){
             try{
                 //10s
@@ -63,7 +80,20 @@ public class VSServerSlave extends Thread{
 
         }
     }
-    void exit(){
-        exit = true;
+
+    void reassignAndexit(String ServerName){
+        List<Resource> resourcelist=new ArrayList<>();
+       if(name.equals(ServerName)) {
+           for (Resource resource : resourceHashMap.values()) {
+               resourcelist.add(resource);
+           }
+       }
+       if(resourcelist.size()!= 0){
+           VSServerMaster.getInstance().getServerSlaveMap().remove(ServerName);
+           VSServerMaster.getInstance().receiveResource(resourcelist);
+           heartbeat.cancel();
+           exit = true;
+        }
+
     }
 }

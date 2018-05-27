@@ -1,7 +1,9 @@
 package de.vs.praktikum.praktikum2;
 
+import java.io.IOException;
 import java.util.*;
 import java.text.SimpleDateFormat;
+import java.util.concurrent.ConcurrentHashMap;
 //import java.security.MessageDigest;
 /**
  * Created by Yang Mao on 5/24/18.
@@ -14,17 +16,20 @@ public class VSServerMaster extends Thread{
         return instance;
     }
     private Map<String, VSServerSlave> serverSlaveMap = new HashMap<>();
-    private Map<String, Date> lastHeartbeatAvailableServer = new HashMap<>();
+    private Map<String, Date> lastHeartbeatAvailableServer = new ConcurrentHashMap<>();
     /**
      *     resouceLocation contains <resouce-id, serverObject> as value pairs.
      *     It indicates where the specific resource is stored.
      */
     private Map<String, VSServerSlave> resourceDistribution = new HashMap<String, VSServerSlave>();
+    //private Map<String , String > resourceDistributionWithString =new HashMap<>();
     private SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
     private Timer cleanup;
     public Map<String, Date> getLastHeartbeatAvailableServer() {
         return lastHeartbeatAvailableServer;
     }
+
+
 
     /*
         Add a new server to the available server set.
@@ -53,19 +58,24 @@ public class VSServerMaster extends Thread{
      *     Redistribute resources from a specific server to other servers.
      * @param DeadServer
      */
-    private void reassignResouces(String DeadServer){
-    }
+//    void reassignResouces(String DeadServer){
+//
+//    }
 
     /**
      * Receive heartbeat from slaves, maintain the slave list
-     * @return
+     *
      */
+//todo exception
+    public void slaveRegister(String slaveName){
+            try{
+                lastHeartbeatAvailableServer.put(slaveName, new Date());
+            }catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("put time to ServerMap failed");
+        }
 
-    boolean slaveRegister(String slaveName){
-//        if (serverSlaveMap.containsKey(slaveName)){
-            lastHeartbeatAvailableServer.put(slaveName, new Date());
-//        }
-        return false;
+
     }
 
 
@@ -74,26 +84,32 @@ public class VSServerMaster extends Thread{
      * @param resource
      * @return  if assignment succeeded.
      */
-    private boolean assignResource(Resource resource){
+    public void assignResource(Resource resource){
         String resourceId = resource.getId();
         List<String> availableSeverList = new ArrayList<>(serverSlaveMap.keySet());
         // TODO: Load balancing
-        if (!availableSeverList.isEmpty()){
-            int hash = resourceId.hashCode();
-            int destServerSlaveIndex= (hash & Integer.MAX_VALUE) % availableSeverList.size();
-            String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
-            System.out.println("Get a valid destServer: " + destServerSlaveName+":"+  serverSlaveMap.get(destServerSlaveName));
-            VSServerSlave destServerSlave = serverSlaveMap.get(destServerSlaveName);
-            if (serverSlaveMap.get(destServerSlaveName).storeResouce(resource)){
-                resourceDistribution.put(resourceId, destServerSlave);
-                System.out.println("add resource" + hash + "to " + destServerSlaveName);
-                return true;
-            }
+       if (!availableSeverList.isEmpty()){
+           try{
+               int hash = resourceId.hashCode();
+                int destServerSlaveIndex= (hash & Integer.MAX_VALUE) % availableSeverList.size();
+                String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
+                System.out.println("Get a valid destServer: " + destServerSlaveName+":"+  serverSlaveMap);
+                VSServerSlave destServerSlave = serverSlaveMap.get(destServerSlaveName);
+                if (serverSlaveMap.get(destServerSlaveName).storeResouce(resource)){
+                    resourceDistribution.put(resourceId, destServerSlave);
+                    //resourceDistributionWithString.put(resourceId,destServerSlave.getServerName());
+                    System.out.println("add resource" + hash + "to " + destServerSlaveName);
+
+                }
+           }catch (Exception e) {
+               e.printStackTrace();
+               System.out.println("assignResource failed!");
+           }
         }
         else{
             System.out.println("No valid server slaves, please add at least a server slave");
         }
-        return false;
+
     }
 
     /**
@@ -131,16 +147,48 @@ public class VSServerMaster extends Thread{
         System.out.println("-----available Slave ------"+df.format(new Date())+"------");
         System.out.println(lastHeartbeatAvailableServer);
     }
+
     public void printResourceDistibution(){
         System.out.println("-----Resource Distribution ----"+df.format(new Date())+"------");
 //        serverSlaveMap.entrySet().forEach(System.out::println);
-//        System.out.println();
-        System.out.println(resourceDistribution);
+        System.out.println("ResourceID---------------Servername");
+        for (String resourceId: resourceDistribution.keySet()){
+        System.out.println(resourceId + "------"+ resourceDistribution.get(resourceId).getServerName() );
+        }
+
     }
+
     public void receiveResource(Resource resource){
         assignResource(resource);
     }
+    public void receiveResource(List<Resource> resourceList){
+        for (Resource resource:resourceList) {
+            assignResource(resource);
+        }
+
+    }
+
+    public void reassignResouces() {
+        List<VSServerSlave> SeverList = new ArrayList<>(serverSlaveMap.values());
+        Set<Resource> resourceSet = new HashSet<>();
+        if (!SeverList.isEmpty()){
+            for (VSServerSlave server : SeverList){
+                resourceSet.addAll(server.getResourceSet());
+            }
+        for (Resource resource : resourceSet){
+                assignResource(resource);
+            }
+        }
+
+
+    }
+
+    public void receiveServer(VSServerSlave vsServerSlave) {
+        reassignResouces();
+
+    }
 }
+
 
 //TODO Exception
 //TODO LOGLEVEL

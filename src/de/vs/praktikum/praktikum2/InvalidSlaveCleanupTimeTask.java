@@ -10,7 +10,8 @@ import java.util.TimerTask;
  */
 public class InvalidSlaveCleanupTimeTask extends TimerTask {
     public void run(){
-        Map<String, Date> heartbeatMap = VSServerMaster.getInstance().getLastHeartbeatAvailableServer();
+       Map<String, Date> heartbeatMap = VSServerMaster.getInstance().getLastHeartbeatAvailableServer();
+        //System.out.println("wait");
         for(String slaveName: heartbeatMap.keySet()){
             if ((new Date().getTime() - heartbeatMap.get(slaveName).getTime())> 1000 * 3){
                 heartbeatMap.remove(slaveName);

@@ -1,7 +1,6 @@
 package de.vs.praktikum.praktikum2;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.util.*;
 
 /**
@@ -24,32 +23,40 @@ public class VSServerManager extends Thread{
     public static VSServerManager getInstance(){
         return instance;
     }
-    public boolean addServerSlave(){
+    public void addServerSlave(){
         ServerDefaultNameIndex++;
         String serverName = "ns"+ ServerDefaultNameIndex +".example.com";
-        if (!serverMap.containsKey(serverName)){
-            VSServerSlave slave = new VSServerSlave(serverName);
-            serverMap.put(slave.getServerName(), slave);
-            slave.start();
-            return true;
+        try {
+            if (!serverMap.containsKey(serverName)) {
+                VSServerSlave slave = new VSServerSlave(serverName);
+                serverMap.put(slave.getServerName(), slave);
+                slave.start();
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("add server slave failed !");
+
         }
-        return false;
     }
-    public boolean addServerSlave(String serverName){
-        if (!serverMap.containsKey(serverName)){
-            VSServerSlave slave = new VSServerSlave(serverName);
-            serverMap.put(slave.getServerName(), slave);
-            slave.start();
-            return true;
-        }
-        return false;
+    public void addServerSlave(String serverName) {
+        try {
+            if (!serverMap.containsKey(serverName)) {
+                VSServerSlave slave = new VSServerSlave(serverName);
+                serverMap.put(slave.getServerName(), slave);
+                slave.start();
+            }}catch(Exception e){
+                e.printStackTrace();
+                System.out.println("add server slave failed !");
+            }
     }
+
     public void removeServerSlave(String name){
         VSServerSlave slave = serverMap.get(name);
         if (slave != null){
-            slave.exit();
+            slave.reassignAndexit(name);
+            serverMap.remove(name);
             //TODO  receive message to master
-//            serverMap.remove(name);
+
         }
     }
 
@@ -97,13 +104,21 @@ public class VSServerManager extends Thread{
     }
 
     public void run(){
+        for(int i=0; i<3; i++)instance.addServerSlave();
+        try {
+            instance.readResourceList("resource");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("read Resourcelist failed");
+        }
+        System.out.println(serverMap);
         while (true){
             Scanner s = new Scanner(System.in);
             String input = s.nextLine();
-            String[] commands = input.toUpperCase().split(" ");
+            String[] commands = input.split(" ");
             switch (commands[0]){
-                case "ADD":
-                    if (commands[1].equals("SERVER")){
+                case "add":
+                    if (commands[1].equals("server")){
                         if(commands.length == 2) {
                             instance.addServerSlave();
                             System.out.println("Add a server slave");
@@ -114,29 +129,27 @@ public class VSServerManager extends Thread{
                             break;
                         }
                     }
-                    else if (commands[1].equals("RESOURCE")){
+                    else if (commands[1].equals("resource")){
                         if(commands.length == 2) instance.addResource();
-                        else if(commands.length == 3)instance.addResource(commands[2]);
+                        //else if(commands.length == 3)instance.addResource(commands[2]);
+                        else if(commands.length == 3){for (int i=0;i< Integer.parseInt(commands[2]);i++)instance.addResource(); }
                         else{
                             System.out.println("Add Resource failed");
                             break;
                         }
-
                     }
                     break;
-                case "REMOVE":
-                    if (commands[1].equals("SERVER")){
-                        if (commands[2].isEmpty() || commands[2].length() == 0 || !serverMap.containsKey(commands[2])){
-                            System.out.println("No Server Name!");
-                            break;
-                        }
+                case "remove":
+                    if (commands[1].equals("server")){
                         instance.removeServerSlave(commands[2]);
+                        break;
                     }
-                    else if (commands[1].equals("RESOURCE")){
+                    else if (commands[1].equals("resource")){
                         //TODO resource removal
                     }
+                    else System.out.println("Command not found!");
                     break;
-                case "GETALL":
+                case "getall":
                     printAllResouce();
                     master.printAvailableServerlist();
                     master.printResourceDistibution();
@@ -172,18 +185,7 @@ public class VSServerManager extends Thread{
         master.start();
         instance.start();
         //Have 3 Server at the beginning
-        for(int i=0; i<3; i++){
-            if (instance.addServerSlave()) {
-                System.out.println("Add a server slave");
-            }
-            else System.out.println("Add a server failed");
-        }
-        //Have 10 different files at the beginning
-//        for(int i=0; i<10; i++){
-//            instance.addResource();
-//        }
-        instance.readResourceList("resource");
-        System.out.println("the initial resourceids are:" + instance.resourceList.size());
+
     }
 
 
