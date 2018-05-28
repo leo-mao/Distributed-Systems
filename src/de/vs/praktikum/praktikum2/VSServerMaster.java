@@ -88,17 +88,20 @@ public class VSServerMaster extends Thread{
         String resourceId = resource.getId();
         List<String> availableSeverList = new ArrayList<>(serverSlaveMap.keySet());
         // TODO: Load balancing
+
        if (!availableSeverList.isEmpty()){
            try{
-               int hash = resourceId.hashCode();
-                int destServerSlaveIndex= (hash & Integer.MAX_VALUE) % availableSeverList.size();
-                String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
+//                int hash = resourceId.hashCode();
+//                int destServerSlaveIndex= (hash & Integer.MAX_VALUE) % availableSeverList.size();
+//                String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
+
+                String destServerSlaveName = RendezvousHash.getInstance().getDestServer(resource);
                 System.out.println("Get a valid destServer: " + destServerSlaveName+":"+  serverSlaveMap);
                 VSServerSlave destServerSlave = serverSlaveMap.get(destServerSlaveName);
                 if (serverSlaveMap.get(destServerSlaveName).storeResouce(resource)){
                     resourceDistribution.put(resourceId, destServerSlave);
                     //resourceDistributionWithString.put(resourceId,destServerSlave.getServerName());
-                    System.out.println("add resource" + hash + "to " + destServerSlaveName);
+//                    System.out.println("add resource" + hash + "to " + destServerSlaveName);
 
                 }
            }catch (Exception e) {
@@ -119,7 +122,7 @@ public class VSServerMaster extends Thread{
     public Map<String, VSServerSlave> getServerSlaveMap() {
         return serverSlaveMap;
     }
-    public void getAvailableServerList(){
+    public void getAvailableServers(){
         printAvailableServerlist();
     }
     /**

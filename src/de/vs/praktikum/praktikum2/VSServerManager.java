@@ -157,6 +157,7 @@ public class VSServerManager extends Thread{
                     printAllResouce();
                     master.printAvailableServerlist();
                     master.printResourceDistibution();
+                    System.out.println(RendezvousHash.getInstance().getScoreTable());
                     break;
                 default:
                     System.out.println("Command not found!");
@@ -187,6 +188,11 @@ public class VSServerManager extends Thread{
         VSServerMaster master = VSServerMaster.getInstance();
         VSServerManager instance = VSServerManager.getInstance();
         master.start();
+        try {
+            sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         instance.start();
         //Have 3 Server at the beginning
 
