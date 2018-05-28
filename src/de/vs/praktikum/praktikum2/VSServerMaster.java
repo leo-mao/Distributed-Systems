@@ -219,7 +219,7 @@ public class VSServerMaster extends Thread{
             lastHeartbeat = new Date(new Date().getTime() - 5000);
         }
         System.out.println(new Date().getTime()- lastHeartbeat.getTime());
-        while((new Date().getTime()- (lastHeartbeat.getTime()) > 2000)){}
+//        while((new Date().getTime()- (lastHeartbeat.getTime()) > 2000)){}
 
         reassignResouces();
     }
