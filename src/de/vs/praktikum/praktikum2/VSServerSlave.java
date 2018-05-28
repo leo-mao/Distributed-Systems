@@ -32,7 +32,7 @@ public class VSServerSlave extends Thread{
         return resourceHashMap;
 
     }
-    public boolean storeResouce(Resource resource){
+    public boolean storeResource(Resource resource){
         resourceHashMap.put(resource.getId(), resource);
         return true;
     }
@@ -65,7 +65,7 @@ public class VSServerSlave extends Thread{
     public void run(){
         heartbeat = new Timer("heartbeat-"+name);
         heartbeat.schedule(new HeartbeatTimerTask(name), 0,2000 );
-        VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
+//      VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
         VSServerMaster.getInstance().receiveServer(this);
         System.out.println("Slave "+name+" start running!");
 
@@ -89,7 +89,6 @@ public class VSServerSlave extends Thread{
            } catch (InterruptedException e) {
                e.printStackTrace();
            }
-
            exit = true;
         }
 

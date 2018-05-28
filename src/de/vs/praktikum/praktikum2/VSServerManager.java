@@ -104,7 +104,6 @@ public class VSServerManager extends Thread{
     }
 
     public void run(){
-        for(int i=0; i<3; i++) {instance.addServerSlave();}
         try {
             instance.readResourceList("resource");
         } catch (IOException e) {
@@ -157,6 +156,8 @@ public class VSServerManager extends Thread{
                     printAllResouce();
                     master.printAvailableServerlist();
                     master.printResourceDistibution();
+                    break;
+                case "gettable":
                     System.out.println(RendezvousHash.getInstance().getScoreTable());
                     break;
                 default:
@@ -188,8 +189,10 @@ public class VSServerManager extends Thread{
         VSServerMaster master = VSServerMaster.getInstance();
         VSServerManager instance = VSServerManager.getInstance();
         master.start();
+        for(int i=0; i<3; i++) {instance.addServerSlave();}
+
         try {
-            sleep(1000);
+            sleep(3000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

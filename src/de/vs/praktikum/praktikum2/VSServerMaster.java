@@ -1,6 +1,5 @@
 package de.vs.praktikum.praktikum2;
 
-import java.io.IOException;
 import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,7 +86,6 @@ public class VSServerMaster extends Thread{
     public void assignResource(Resource resource){
         String resourceId = resource.getId();
         List<String> availableSeverList = new ArrayList<>(serverSlaveMap.keySet());
-        // TODO: Load balancing
 
        if (!availableSeverList.isEmpty()){
            try{
@@ -96,9 +94,11 @@ public class VSServerMaster extends Thread{
 //                String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
 
                 String destServerSlaveName = RendezvousHash.getInstance().getDestServer(resource);
-                System.out.println("Get a valid destServer: " + destServerSlaveName+":"+  serverSlaveMap);
+
+                System.out.println(resourceId+"----------->"+  destServerSlaveName);
+
                 VSServerSlave destServerSlave = serverSlaveMap.get(destServerSlaveName);
-                if (serverSlaveMap.get(destServerSlaveName).storeResouce(resource)){
+                if (serverSlaveMap.get(destServerSlaveName).storeResource(resource)){
                     resourceDistribution.put(resourceId, destServerSlave);
                     //resourceDistributionWithString.put(resourceId,destServerSlave.getServerName());
 //                    System.out.println("add resource" + hash + "to " + destServerSlaveName);
@@ -129,7 +129,7 @@ public class VSServerMaster extends Thread{
      * Thread run
      */
     public void run() {
-        cleanup = new Timer("cleanup");
+        cleanup = new Timer("Cleanup");
         cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 0, 500);
         while (true){
             try {
@@ -148,7 +148,9 @@ public class VSServerMaster extends Thread{
      */
     public void printAvailableServerlist(){
         System.out.println("-----available Slave ------"+df.format(new Date())+"------");
-        System.out.println(lastHeartbeatAvailableServer);
+
+        for(String key:lastHeartbeatAvailableServer.keySet())
+        System.out.println(key+" since "+lastHeartbeatAvailableServer.get(key));
     }
 
     public void printResourceDistibution() {
@@ -170,7 +172,7 @@ public class VSServerMaster extends Thread{
         assignResource(resource);
     }
     public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
-        long time = lastHeartbeatAvailableServer.get(serverName).getTime() - 5000;
+        long time = lastHeartbeatAvailableServer.get(serverName).getTime() - 10000;
         lastHeartbeatAvailableServer.put(serverName,new Date(time));
         manualCleanup();
         if(serverSlaveMap.keySet().size()!=(lastHeartbeatAvailableServer.keySet().size())){
@@ -180,12 +182,11 @@ public class VSServerMaster extends Thread{
                 assignResource(resource);
             }
         }
-        else System.out.println("buchenggong");
     }
 
     public void manualCleanup(){
         for(String slaveName: lastHeartbeatAvailableServer.keySet()){
-            if ((new Date().getTime() - lastHeartbeatAvailableServer.get(slaveName).getTime())> 3000){
+            if ((new Date().getTime() - lastHeartbeatAvailableServer.get(slaveName).getTime())> 5000){
                 lastHeartbeatAvailableServer.remove(slaveName);
                 System.out.println("!!!!!!Server slave "+ slaveName +" broke down!!!!!!");
                 System.out.println("lastHeartbeatAvailableServer number ："+ lastHeartbeatAvailableServer);
@@ -210,8 +211,17 @@ public class VSServerMaster extends Thread{
     }
 
     public void receiveServer(VSServerSlave vsServerSlave) {
-        reassignResouces();
+        Date lastHeartbeat = lastHeartbeatAvailableServer.get(vsServerSlave.getServerName());
 
+        if (lastHeartbeat == null){
+            System.out.println(vsServerSlave.getServerName());
+//            System.out.println(lastHeartbeat.getTime());
+            lastHeartbeat = new Date(new Date().getTime() - 5000);
+        }
+        System.out.println(new Date().getTime()- lastHeartbeat.getTime());
+        while((new Date().getTime()- (lastHeartbeat.getTime()) > 2000)){}
+
+        reassignResouces();
     }
 }
 
