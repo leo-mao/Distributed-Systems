@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VSServerSlave extends Thread{
     private String name;
     private Timer heartbeat;
+    int THREAD_SNOOZE = 1000;
+
 
     /*
         Create a server.
@@ -47,11 +49,6 @@ public class VSServerSlave extends Thread{
         return new HashSet<Resource>(resourceHashMap.values());
     }
 
-    //    public set<Resource> callBackResourceSet(String serverName) {
-//        for ( VSServerSlave server : resourceDistribution.values()){
-//            if(serverName == server.getServerName())
-//
-//    }
     public Resource getResouce(String id){
         if (resourceHashMap.containsKey(id)){
             return resourceHashMap.get(id);
@@ -61,7 +58,7 @@ public class VSServerSlave extends Thread{
 
     public void run(){
         heartbeat = new Timer("heartbeat-"+name);
-        heartbeat.schedule(new HeartbeatTimerTask(name), 0,2000 );
+        heartbeat.schedule(new HeartbeatTimerTask(name), 0,THREAD_SNOOZE * 2 );
 //      VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
         VSServerMaster.getInstance().receiveServer(this);
         System.out.println("Slave "+name+" start running!");
@@ -69,7 +66,7 @@ public class VSServerSlave extends Thread{
         while (!exit){
             try{
                 //10s
-               sleep(1000);
+               sleep(THREAD_SNOOZE);
             }
             catch (Exception e){
                 e.printStackTrace();

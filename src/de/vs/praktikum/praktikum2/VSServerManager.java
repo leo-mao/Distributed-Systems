@@ -56,9 +56,7 @@ public class VSServerManager extends Thread{
 
     public void removeServerSlave(String name) throws InterruptedException {
         VSServerSlave slave = serverSlaveMap.get(name);
-
         if (slave!= null){
-            System.out.println("sds");
             slave.exit();
             serverSlaveMap.remove(name);
         }
@@ -135,8 +133,7 @@ public class VSServerManager extends Thread{
                     }
                     else if (commands[1].equals("resource")){
                         if(commands.length == 2) instance.addResource();
-                        //else if(commands.length == 3)instance.addResource(commands[2]);
-                        else if(commands.length == 3){for (int i=0;i< Integer.parseInt(commands[2]);i++)instance.addResource(); }
+                        else if(commands.length == 3){for (int i=0;i< Integer.parseInt(commands[2]);i++) instance.addResource(); }
                         else{
                             System.out.println("Add Resource failed");
                             break;
@@ -161,18 +158,18 @@ public class VSServerManager extends Thread{
                     master.printResourceDistibution();
                     System.out.println(serverSlaveMap);
                     break;
-                case "available":
-                    master.getAvailableServer();
-                    break;
-                case "allresource":
-                    printAllResouce();
-                    break;
-                case "gettable":
-                    System.out.println(RendezvousHash.getInstance().getScoreTable());
-                    break;
-                case "reassign":
-                    VSServerMaster.getInstance().reassignResouces();
-                    break;
+//                case "available":
+//                    master.getAvailableServer();
+//                    break;
+//                case "allresource":
+//                    printAllResouce();
+//                    break;
+//                case "gettable":
+//                    System.out.println(RendezvousHash.getInstance().getScoreTable());
+//                    break;
+//                case "reassign":
+//                    VSServerMaster.getInstance().reassignResouces();
+//                    break;
                 default:
                     System.out.println("Command not found!");
                     break;

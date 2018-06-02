@@ -1,6 +1,5 @@
 package de.vs.praktikum.praktikum2;
 
-import javax.sound.midi.SysexMessage;
 import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,8 +16,11 @@ public class VSServerMaster extends Thread{
     static VSServerMaster getInstance(){
         return instance;
     }
-    int INACTIVE = 5000;
-    int INACTIVE_LONG_AGO = 50000;
+    int SLAVE_INACTIVE = 5000;
+    int SLAVE_DOWN = SLAVE_INACTIVE * 10;
+    int THREAD_SNOOZE = 1000;
+    int SHORT_SNOOZE = THREAD_SNOOZE / 5;
+
     /**
      *     resouceLocation contains <resource-id, serverObject> as value pairs.
      *     It indicates where the specific resource is stored.
@@ -40,7 +42,8 @@ public class VSServerMaster extends Thread{
     public void slaveRegister(String slaveName){
             try{
                 if (availableServerList.get(slaveName) == null ||
-                        ((new Date().getTime() - availableServerList.get(slaveName).getTime()) >= INACTIVE)){
+                        ((new Date().getTime() - availableServerList.get(slaveName).getTime()) >= SLAVE_INACTIVE)){
+                    availableServerList.put(slaveName, new Date());
                     reassignResouces();
                 }
                 else {
@@ -57,11 +60,12 @@ public class VSServerMaster extends Thread{
      * @param resource
      * @return  if assignment succeeded.
      */
-    public void assignResource(Resource resource){
+    public boolean assignResource(Resource resource){
         String resourceId = resource.getId();
             try{
-                String destServerSlaveName = RendezvousHash.getInstance().getDestServer(resource);
-                if (!destServerSlaveName.isEmpty()) {
+                VSServerSlave destSlave = RendezvousHash.getInstance().getDestServer(resource);
+                if (destSlave != null) {
+                    String destServerSlaveName = destSlave.getServerName();
                     System.out.println(resourceId + "----------->" + destServerSlaveName);
                     VSServerSlave destServerSlave = VSServerManager.getInstance().getServerSlaveMap().get(destServerSlaveName);
                     if (destServerSlave.storeResource(resource)) {
@@ -70,12 +74,14 @@ public class VSServerMaster extends Thread{
                 }
                 else {// No server slave available
                     System.out.println("No server Slave available!");
+                    return false;
                 }
            }catch (Exception e) {
                e.printStackTrace();
                System.out.println("assignResource failed!");
            }
-        }
+           return true;
+    }
 
     /**
      *
@@ -88,18 +94,16 @@ public class VSServerMaster extends Thread{
      * Thread run
      */
     public void run() {
-//        cleanup = new Timer("Cleanup");
-//        cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 5000, 1000);
         while (true){
             try {
-                if (resourceQueue.size() > 0 && availableServerList.size() > 0){
-                    for(Resource resource: resourceQueue){
-                        System.out.println("Assigning "+resource.getId());
-                        assignResource(resource);
-                    }
+                Resource resource;
+                if ((resource = resourceQueue.poll()) != null && availableServerList.size() > 0){
+                        while (!assignResource(resource)){
+                            // when assignment failed, sleep.
+                            sleep(SHORT_SNOOZE);
+                        }
                 }
-                sleep(1000);
-
+                sleep(THREAD_SNOOZE);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Sleep failed");
@@ -125,7 +129,7 @@ public class VSServerMaster extends Thread{
 
 
     public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
-        long time = availableServerList.get(serverName).getTime() - INACTIVE_LONG_AGO;
+        long time = availableServerList.get(serverName).getTime() - SLAVE_DOWN;
         availableServerList.put(serverName,new Date(time));
         if(serverSlaveMap.keySet().size()!=(availableServerList.keySet().size())){
             serverSlaveMap.remove(serverName);
@@ -142,7 +146,8 @@ public class VSServerMaster extends Thread{
     public ArrayList<VSServerSlave> getAvailableServer(){
         ArrayList<VSServerSlave> availableList = new ArrayList<>();
         for(String slaveName: availableServerList.keySet()){
-            if ((new Date().getTime() - availableServerList.get(slaveName).getTime()) < INACTIVE){
+//            System.out.println("Check time difference:"+ (new Date().getTime() - availableServerList.get(slaveName).getTime()));
+            if ((new Date().getTime() - availableServerList.get(slaveName).getTime()) < SLAVE_INACTIVE){
                 availableList.add(VSServerManager.getInstance().getServerSlaveMap().get(slaveName));
             }
         }
@@ -168,7 +173,7 @@ public class VSServerMaster extends Thread{
 
         if (lastHeartbeat == null){
             System.out.println(serverSlave.getServerName());
-            lastHeartbeat = new Date(new Date().getTime() - INACTIVE_LONG_AGO);
+            lastHeartbeat = new Date(new Date().getTime() - SLAVE_DOWN);
             availableServerList.put(serverSlave.getServerName(), lastHeartbeat);
         }
         reassignResouces();

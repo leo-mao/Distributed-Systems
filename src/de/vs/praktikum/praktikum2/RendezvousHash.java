@@ -26,35 +26,34 @@ public class RendezvousHash {
         return (serverSlaveName + baseHash).hashCode() & Integer.MAX_VALUE;
     }
 
-    public String getDestServer(Resource resource){
+    public VSServerSlave getDestServer(Resource resource){
         String resourceId = resource.getId();
         List<VSServerSlave> serverList = VSServerMaster.getInstance().getAvailableServer();
-        int index = -1;
+        int currentScore = Integer.MIN_VALUE;
         int max = Integer.MIN_VALUE;
-        System.out.println("-------getting scores--------------");
-        for(int i=0; i<serverList.size(); i++){
-            String slaveName = serverList.get(i).getServerName();
-            int currentScore;
-            if (scoreTable.containsKey(new Pair<>(slaveName, resourceId))){
-                currentScore = scoreTable.get(new Pair<>(slaveName, resourceId));
+        VSServerSlave destSlave = null;
+//        System.out.println("-------getting scores--------------");
+//        System.out.println("Current slave number "+serverList.size());
+        for (VSServerSlave slave: serverList){
+            if (scoreTable.containsKey(new Pair<>(slave.getServerName(), resourceId))){
+                currentScore = scoreTable.get(new Pair<>(slave.getServerName(), resourceId));
+//                System.out.println("--------------Score table contains PAIR--------------");
             }
             else {
-                System.out.println("scoreTable doesn't contain the key, calculate the hash value responding to current key now");
-                currentScore = hash(slaveName, resource.getId());
-                scoreTable.put(new Pair<>(slaveName, resourceId), currentScore);
+//                System.out.println("scoreTable doesn't contain the key, calculate the hash value responding to current key now");
+                currentScore = hash(slave.getServerName(), resource.getId());
+                scoreTable.put(new Pair<>(slave.getServerName(), resourceId), currentScore);
+//                System.out.println("currentScore:"+currentScore);
             }
-            System.out.println(resourceId+":"+slaveName+":"+currentScore);
             if (currentScore > max){
-                index = i;
                 max = currentScore;
+                destSlave = slave;
             }
         }
-
-        if (index != -1){
-            return  serverList.get(index).getName();
+        if (destSlave == null){
+            System.out.println("No Slave currently available!");
         }
-        System.out.println("ServerSlave index = -1!\n No Slave currently available!");
-        return null;
+        return destSlave;
     }
 
 }
