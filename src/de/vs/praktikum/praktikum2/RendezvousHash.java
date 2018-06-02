@@ -9,7 +9,7 @@ import java.util.*;
 public class RendezvousHash {
     private Map<Pair<String, String>, Integer> scoreTable = new HashMap<>();
     private static RendezvousHash instance = new RendezvousHash();
-    private Set serverSet = VSServerMaster.getInstance().getLastHeartbeatAvailableServer().keySet();
+    private Set serverSet = VSServerMaster.getInstance().getAvailableServerList().keySet();
     private List resourceList = VSServerManager.getInstance().getResourceList();
     private RendezvousHash(){}
 
@@ -25,56 +25,35 @@ public class RendezvousHash {
         int baseHash = resourceId.hashCode();
         return (serverSlaveName + baseHash).hashCode() & Integer.MAX_VALUE;
     }
-//    public boolean calculateScoreForNewResource(Resource resource){
-////        serverSet = VSServerMaster.getInstance().getLastHeartbeatAvailableServer().keySet();
-////        resourceList = VSServerManager.getInstance().getResourceList();
-//        for(Object serverSlaveName:serverSet){
-//            String slaveName = String.class.cast(serverSlaveName);
-//
-//        }
-//        return false;
-//    }
-//    public void generateScoreTable(){
-////        scoreTable = new HashMap<>();
-////        serverSet = VSServerMaster.getInstance().getLastHeartbeatAvailableServer().keySet();
-////        resourceList = VSServerManager.getInstance().getResourceList();
-//        for(Object serverSlaveName:serverSet){
-//            String slaveName = String.class.cast(serverSlaveName);
-//            for(Object object: resourceList){
-//                Resource resource =  Resource.class.cast(object);
-//                int score = hash(slaveName, resource.getId());
-//                scoreTable.put(new Pair<String, String>(slaveName, resource.getId()), score);
-//            }
-//        }
-//    }
 
     public String getDestServer(Resource resource){
         String resourceId = resource.getId();
-        List serverList = new ArrayList(VSServerMaster.getInstance().getLastHeartbeatAvailableServer().keySet());
+        List<VSServerSlave> serverList = VSServerMaster.getInstance().getAvailableServer();
         int index = -1;
         int max = Integer.MIN_VALUE;
+        System.out.println("-------getting scores--------------");
         for(int i=0; i<serverList.size(); i++){
-            String slaveName = String.class.cast(serverList.get(i));
+            String slaveName = serverList.get(i).getServerName();
             int currentScore;
             if (scoreTable.containsKey(new Pair<>(slaveName, resourceId))){
                 currentScore = scoreTable.get(new Pair<>(slaveName, resourceId));
             }
             else {
-                System.out.println("scoreTable doesn't contain the key, calculate the hash value responding to key now");
+                System.out.println("scoreTable doesn't contain the key, calculate the hash value responding to current key now");
                 currentScore = hash(slaveName, resource.getId());
-                scoreTable.put(new Pair<>(slaveName, resourceId),currentScore);
+                scoreTable.put(new Pair<>(slaveName, resourceId), currentScore);
             }
             System.out.println(resourceId+":"+slaveName+":"+currentScore);
             if (currentScore > max){
                 index = i;
                 max = currentScore;
             }
+        }
 
-        }
         if (index != -1){
-            return  String.class.cast(serverList.get(index));
+            return  serverList.get(index).getName();
         }
-        System.out.println("index = -1!");
+        System.out.println("ServerSlave index = -1!\n No Slave currently available!");
         return null;
     }
 

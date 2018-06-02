@@ -30,12 +30,12 @@ public class VSServerSlave extends Thread{
     private Map<String, Resource> resourceHashMap = new HashMap<String, Resource>();
     public Map<String, Resource> getResourceHashMap(){
         return resourceHashMap;
-
     }
     public boolean storeResource(Resource resource){
         resourceHashMap.put(resource.getId(), resource);
         return true;
     }
+
     public boolean removeResouce(String id){
         if (resourceHashMap.containsKey(id)){
             resourceHashMap.remove(id);
@@ -43,10 +43,6 @@ public class VSServerSlave extends Thread{
         }
         return false;
     }
-    public Set<String> getResouceSet(){
-        return resourceHashMap.keySet();
-    }
-
     public Set<Resource> getResourceSet() {
         return new HashSet<Resource>(resourceHashMap.values());
     }
@@ -62,6 +58,7 @@ public class VSServerSlave extends Thread{
         }
         return null;
     }
+
     public void run(){
         heartbeat = new Timer("heartbeat-"+name);
         heartbeat.schedule(new HeartbeatTimerTask(name), 0,2000 );

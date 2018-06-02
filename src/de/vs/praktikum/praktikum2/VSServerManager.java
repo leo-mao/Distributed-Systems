@@ -10,7 +10,12 @@ import java.util.*;
 public class VSServerManager extends Thread{
     private static VSServerManager instance = new VSServerManager();
     private int ServerDefaultNameIndex = 0;
-    private Map<String, VSServerSlave> serverMap = new HashMap<>();
+
+    public Map<String, VSServerSlave> getServerSlaveMap() {
+        return serverSlaveMap;
+    }
+
+    private Map<String, VSServerSlave> serverSlaveMap = new HashMap<>();
     private VSServerMaster master = VSServerMaster.getInstance();
 
     public List<Resource> getResourceList() {
@@ -27,22 +32,21 @@ public class VSServerManager extends Thread{
         ServerDefaultNameIndex++;
         String serverName = "ns"+ ServerDefaultNameIndex +".example.com";
         try {
-            if (!serverMap.containsKey(serverName)) {
+            if (!serverSlaveMap.containsKey(serverName)) {
                 VSServerSlave slave = new VSServerSlave(serverName);
-                serverMap.put(slave.getServerName(), slave);
+                serverSlaveMap.put(slave.getServerName(), slave);
                 slave.start();
             }
         }catch (Exception e) {
             e.printStackTrace();
             System.out.println("add server slave failed !");
-
         }
     }
     public void addServerSlave(String serverName) {
         try {
-            if (!serverMap.containsKey(serverName)) {
+            if (!serverSlaveMap.containsKey(serverName)) {
                 VSServerSlave slave = new VSServerSlave(serverName);
-                serverMap.put(slave.getServerName(), slave);
+                serverSlaveMap.put(slave.getServerName(), slave);
                 slave.start();
             }}catch(Exception e){
                 e.printStackTrace();
@@ -51,12 +55,12 @@ public class VSServerManager extends Thread{
     }
 
     public void removeServerSlave(String name) throws InterruptedException {
-        VSServerSlave slave = serverMap.get(name);
+        VSServerSlave slave = serverSlaveMap.get(name);
 
         if (slave!= null){
             System.out.println("sds");
             slave.exit();
-            serverMap.remove(name);
+            serverSlaveMap.remove(name);
         }
     }
 
@@ -82,7 +86,6 @@ public class VSServerManager extends Thread{
     /**
      * Generate a resource with the parameter resourceid
      * @param resourceid
-     * @return
      */
     public Resource generateResource(String resourceid){
         Resource resource = new Resource(resourceid);
@@ -110,7 +113,9 @@ public class VSServerManager extends Thread{
             e.printStackTrace();
             System.out.println("read Resourcelist failed");
         }
-        System.out.println(serverMap);
+
+//        System.out.println(serverSlaveMap);
+
         while (true){
             Scanner s = new Scanner(System.in);
             String input = s.nextLine();
@@ -153,12 +158,20 @@ public class VSServerManager extends Thread{
                     else System.out.println("Command not found!");
                     break;
                 case "getall":
-                    printAllResouce();
-                    master.printAvailableServerlist();
                     master.printResourceDistibution();
+                    System.out.println(serverSlaveMap);
+                    break;
+                case "available":
+                    master.getAvailableServer();
+                    break;
+                case "allresource":
+                    printAllResouce();
                     break;
                 case "gettable":
                     System.out.println(RendezvousHash.getInstance().getScoreTable());
+                    break;
+                case "reassign":
+                    VSServerMaster.getInstance().reassignResouces();
                     break;
                 default:
                     System.out.println("Command not found!");

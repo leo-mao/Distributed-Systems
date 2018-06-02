@@ -1,9 +1,11 @@
 package de.vs.praktikum.praktikum2;
 
+import javax.sound.midi.SysexMessage;
 import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.ConcurrentHashMap;
-//import java.security.MessageDigest;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * Created by Yang Mao on 5/24/18.
  * email: yang.mao@stud.hs-emden-leer.de
@@ -11,72 +13,44 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VSServerMaster extends Thread{
     private static VSServerMaster instance = new VSServerMaster();
     private VSServerMaster(){}
+    private ConcurrentLinkedQueue<Resource> resourceQueue = new ConcurrentLinkedQueue();
     static VSServerMaster getInstance(){
         return instance;
     }
-    private Map<String, VSServerSlave> serverSlaveMap = new HashMap<>();
-    private Map<String, Date> lastHeartbeatAvailableServer = new ConcurrentHashMap<>();
+    int INACTIVE = 5000;
+    int INACTIVE_LONG_AGO = 50000;
     /**
-     *     resouceLocation contains <resouce-id, serverObject> as value pairs.
+     *     resouceLocation contains <resource-id, serverObject> as value pairs.
      *     It indicates where the specific resource is stored.
      */
     private Map<String, VSServerSlave> resourceDistribution = new HashMap<String, VSServerSlave>();
-    //private Map<String , String > resourceDistributionWithString =new HashMap<>();
+    // All servers references(including those are not available)
+    private Map<String, VSServerSlave> serverSlaveMap = new HashMap<>();
+    // This map records the last heartbeat of servers
+    private Map<String, Date> availableServerList = new ConcurrentHashMap<>();
     private SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
-    private Timer cleanup;
-    public Map<String, Date> getLastHeartbeatAvailableServer() {
-        return lastHeartbeatAvailableServer;
+    public Map<String, Date> getAvailableServerList() {
+        return availableServerList;
     }
-
-
-
-    /*
-        Add a new server to the available server set.
-         */
-//    boolean addServerSlave(VSServerSlave slave){
-//        serverSlaveMap.put(slave.getServerName(), slave);
-//        System.out.println("Add a new slave: "+slave.getServerName());
-//        printAvailableServerlist();
-//        return true;
-//    }
-//
-//    /**
-//     *     Update the available server set.
-//     * @param slavename
-//     * @return if remove succeeded.
-//     */
-//    boolean removeServerSlave(String slavename){
-//        if (serverSlaveMap.keySet().contains(slavename)){
-//            serverSlaveMap.remove(slavename);
-//            return true;
-//        }
-//        return false;
-//    }
-
-    /**
-     *     Redistribute resources from a specific server to other servers.
-     * @param DeadServer
-     */
-//    void reassignResouces(String DeadServer){
-//
-//    }
 
     /**
      * Receive heartbeat from slaves, maintain the slave list
      *
      */
-//todo exception
     public void slaveRegister(String slaveName){
             try{
-                lastHeartbeatAvailableServer.put(slaveName, new Date());
+                if (availableServerList.get(slaveName) == null ||
+                        ((new Date().getTime() - availableServerList.get(slaveName).getTime()) >= INACTIVE)){
+                    reassignResouces();
+                }
+                else {
+                    availableServerList.put(slaveName, new Date());
+                }
             }catch (Exception e) {
             e.printStackTrace();
-            System.out.println("put time to ServerMap failed");
+            System.out.println("Slave register failed");
         }
-
-
     }
-
 
     /**
      *     Assign a resource to proper server.
@@ -85,35 +59,23 @@ public class VSServerMaster extends Thread{
      */
     public void assignResource(Resource resource){
         String resourceId = resource.getId();
-        List<String> availableSeverList = new ArrayList<>(serverSlaveMap.keySet());
-
-       if (!availableSeverList.isEmpty()){
-           try{
-//                int hash = resourceId.hashCode();
-//                int destServerSlaveIndex= (hash & Integer.MAX_VALUE) % availableSeverList.size();
-//                String destServerSlaveName = availableSeverList.get(destServerSlaveIndex);
-
+            try{
                 String destServerSlaveName = RendezvousHash.getInstance().getDestServer(resource);
-
-                System.out.println(resourceId+"----------->"+  destServerSlaveName);
-
-                VSServerSlave destServerSlave = serverSlaveMap.get(destServerSlaveName);
-                if (serverSlaveMap.get(destServerSlaveName).storeResource(resource)){
-                    resourceDistribution.put(resourceId, destServerSlave);
-                    //resourceDistributionWithString.put(resourceId,destServerSlave.getServerName());
-//                    System.out.println("add resource" + hash + "to " + destServerSlaveName);
-
+                if (!destServerSlaveName.isEmpty()) {
+                    System.out.println(resourceId + "----------->" + destServerSlaveName);
+                    VSServerSlave destServerSlave = VSServerManager.getInstance().getServerSlaveMap().get(destServerSlaveName);
+                    if (destServerSlave.storeResource(resource)) {
+                        resourceDistribution.put(resourceId, destServerSlave);
+                    }
+                }
+                else {// No server slave available
+                    System.out.println("No server Slave available!");
                 }
            }catch (Exception e) {
                e.printStackTrace();
                System.out.println("assignResource failed!");
            }
         }
-        else{
-            System.out.println("No valid server slaves, please add at least a server slave");
-        }
-
-    }
 
     /**
      *
@@ -122,18 +84,20 @@ public class VSServerMaster extends Thread{
     public Map<String, VSServerSlave> getServerSlaveMap() {
         return serverSlaveMap;
     }
-    public void getAvailableServers(){
-        printAvailableServerlist();
-    }
     /**
      * Thread run
      */
     public void run() {
-        cleanup = new Timer("Cleanup");
-        cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 0, 500);
+//        cleanup = new Timer("Cleanup");
+//        cleanup.schedule(new InvalidSlaveCleanupTimeTask(), 5000, 1000);
         while (true){
             try {
-//                printAvailableServerlist();
+                if (resourceQueue.size() > 0 && availableServerList.size() > 0){
+                    for(Resource resource: resourceQueue){
+                        System.out.println("Assigning "+resource.getId());
+                        assignResource(resource);
+                    }
+                }
                 sleep(1000);
 
             } catch (Exception e) {
@@ -148,55 +112,46 @@ public class VSServerMaster extends Thread{
      */
     public void printAvailableServerlist(){
         System.out.println("-----available Slave ------"+df.format(new Date())+"------");
-
-        for(String key:lastHeartbeatAvailableServer.keySet())
-        System.out.println(key+" since "+lastHeartbeatAvailableServer.get(key));
+        for(VSServerSlave key:getAvailableServer())
+        System.out.println(key.getServerName()+" since "+ availableServerList.get(key.getServerName()));
     }
 
     public void printResourceDistibution() {
-        System.out.println("-----Resource Distribution ----" + df.format(new Date()) + "------");
-
-        System.out.println("ResourceID---------------Servername");
+        System.out.println("-------ResourceID-------Servername---- " + df.format(new Date()) + "-----");
         for (String resourceId : resourceDistribution.keySet()) {
-            System.out.println(resourceId + "------" + resourceDistribution.get(resourceId).getServerName());
-//        Map<VSServerSlave,String> serverResourceIdMap = new HashMap<>();
-//        for(Map.Entry<String,VSServerSlave> entry :resourceDistribution.entrySet()){
-//            serverResourceIdMap.put(entry.getValue(), entry.getKey());
-//        }System.out.println(serverResourceIdMap);
+            System.out.println(resourceId + "---------" + resourceDistribution.get(resourceId).getServerName());
         }
     }
 
 
+    public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
+        long time = availableServerList.get(serverName).getTime() - INACTIVE_LONG_AGO;
+        availableServerList.put(serverName,new Date(time));
+        if(serverSlaveMap.keySet().size()!=(availableServerList.keySet().size())){
+            serverSlaveMap.remove(serverName);
+            for (Resource resource : resourceList) {
+                receiveResource(resource);
+            }
+        }
+    }
 
     public void receiveResource(Resource resource){
-        assignResource(resource);
-    }
-    public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
-        long time = lastHeartbeatAvailableServer.get(serverName).getTime() - 10000;
-        lastHeartbeatAvailableServer.put(serverName,new Date(time));
-        manualCleanup();
-        if(serverSlaveMap.keySet().size()!=(lastHeartbeatAvailableServer.keySet().size())){
-            serverSlaveMap.remove(serverName);
-            System.out.println("sdmsl");
-            for (Resource resource : resourceList) {
-                assignResource(resource);
-            }
-        }
+        resourceQueue.add(resource);
     }
 
-    public void manualCleanup(){
-        for(String slaveName: lastHeartbeatAvailableServer.keySet()){
-            if ((new Date().getTime() - lastHeartbeatAvailableServer.get(slaveName).getTime())> 5000){
-                lastHeartbeatAvailableServer.remove(slaveName);
-                System.out.println("!!!!!!Server slave "+ slaveName +" broke down!!!!!!");
-                System.out.println("lastHeartbeatAvailableServer number ："+ lastHeartbeatAvailableServer);
-                System.out.println(serverSlaveMap);
+    public ArrayList<VSServerSlave> getAvailableServer(){
+        ArrayList<VSServerSlave> availableList = new ArrayList<>();
+        for(String slaveName: availableServerList.keySet()){
+            if ((new Date().getTime() - availableServerList.get(slaveName).getTime()) < INACTIVE){
+                availableList.add(VSServerManager.getInstance().getServerSlaveMap().get(slaveName));
             }
         }
+        return new ArrayList<>(availableList);
     }
 
+    //TODO Bug
     public void reassignResouces() {
-        List<VSServerSlave> SeverList = new ArrayList<>(serverSlaveMap.values());
+        List<VSServerSlave> SeverList = getAvailableServer();
         Set<Resource> resourceSet = new HashSet<>();
         if (!SeverList.isEmpty()){
             for (VSServerSlave server : SeverList){
@@ -206,21 +161,16 @@ public class VSServerMaster extends Thread{
                 assignResource(resource);
             }
         }
-
-
     }
 
-    public void receiveServer(VSServerSlave vsServerSlave) {
-        Date lastHeartbeat = lastHeartbeatAvailableServer.get(vsServerSlave.getServerName());
+    public void receiveServer(VSServerSlave serverSlave) {
+        Date lastHeartbeat = availableServerList.get(serverSlave.getServerName());
 
         if (lastHeartbeat == null){
-            System.out.println(vsServerSlave.getServerName());
-//            System.out.println(lastHeartbeat.getTime());
-            lastHeartbeat = new Date(new Date().getTime() - 5000);
+            System.out.println(serverSlave.getServerName());
+            lastHeartbeat = new Date(new Date().getTime() - INACTIVE_LONG_AGO);
+            availableServerList.put(serverSlave.getServerName(), lastHeartbeat);
         }
-        System.out.println(new Date().getTime()- lastHeartbeat.getTime());
-//        while((new Date().getTime()- (lastHeartbeat.getTime()) > 2000)){}
-
         reassignResouces();
     }
 }
@@ -228,4 +178,4 @@ public class VSServerMaster extends Thread{
 
 
 //TODO Exception
-//TODO LOGLEVEL
+//TODO LOG
