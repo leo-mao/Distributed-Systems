@@ -1,6 +1,10 @@
 package de.vs.praktikum.praktikum2;
 
+import de.vs.praktikum.praktikum3.RmiServerInterface;
+
 import java.io.*;
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
 import java.util.*;
 
 /**
@@ -28,6 +32,7 @@ public class VSServerManager implements Runnable{
     public static VSServerManager getInstance(){
         return instance;
     }
+
     public void addServerSlave(){
         ServerDefaultNameIndex++;
         String serverName = "ns"+ ServerDefaultNameIndex +".example.com";
@@ -35,7 +40,22 @@ public class VSServerManager implements Runnable{
             if (!serverSlaveMap.containsKey(serverName)) {
                 VSServerSlave slave = new VSServerSlave(serverName);
                 serverSlaveMap.put(slave.getServerName(), slave);
-                slave.start();
+
+                try {
+//                    RmiServerInterface stub = (RmiServerInterface) UnicastRemoteObject.exportObject(this, 0);
+
+                    // Bind the remote object's stub in the registry
+//                    Registry registry = LocateRegistry.getRegistry();
+                    Naming.rebind("//localhost/" + serverName, slave);
+
+                    System.err.println("Server " + serverName + " ready");
+                } catch (Exception e) {
+                    System.err.println("Server exception: " + e.toString());
+                    e.printStackTrace();
+                }
+
+
+                new Thread(slave).start();
             }
         }catch (Exception e) {
             e.printStackTrace();
@@ -47,7 +67,7 @@ public class VSServerManager implements Runnable{
             if (!serverSlaveMap.containsKey(serverName)) {
                 VSServerSlave slave = new VSServerSlave(serverName);
                 serverSlaveMap.put(slave.getServerName(), slave);
-                slave.start();
+                new Thread(slave).start();
             }}catch(Exception e){
                 e.printStackTrace();
                 System.out.println("add server slave failed !");
@@ -158,18 +178,9 @@ public class VSServerManager implements Runnable{
                     master.printResourceDistibution();
                     System.out.println(serverSlaveMap);
                     break;
-//                case "available":
-//                    master.getAvailableServer();
-//                    break;
-//                case "allresource":
-//                    printAllResouce();
-//                    break;
-//                case "gettable":
-//                    System.out.println(RendezvousHash.getInstance().getScoreTable());
-//                    break;
-//                case "reassign":
-//                    VSServerMaster.getInstance().reassignResouces();
-//                    break;
+                case "message":
+                    getMessage(commands[1]);
+                    break;
                 default:
                     System.out.println("Command not found!");
                     break;
@@ -195,9 +206,22 @@ public class VSServerManager implements Runnable{
         reader.close();
     }
 
+    private void getMessage(String serverName){
+        try{
+            RmiServerInterface obj = (RmiServerInterface) Naming.lookup("//localhost/"+serverName);
+//            System.out.println("Client Started");
+            System.out.println("Get the Message: " + obj.getMessage());
+        }catch (Exception e){
+            System.out.println("Naming.lookup failed");
+            e.printStackTrace();
+        }
+    }
     public static void main(String[] args) throws IOException {
         VSServerMaster master = VSServerMaster.getInstance();
         VSServerManager instance = VSServerManager.getInstance();
+        LocateRegistry.createRegistry(1099);
+        System.out.println("Java RMI registry created.");
+
         Thread vsServerMaster =  new Thread(master);
         Thread vsServerManager = new Thread(instance);
         vsServerMaster.start();

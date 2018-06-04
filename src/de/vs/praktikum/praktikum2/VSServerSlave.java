@@ -1,13 +1,19 @@
 package de.vs.praktikum.praktikum2;
 
+import de.vs.praktikum.praktikum3.RmiServerInterface;
+
 import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
 /**
  * Created by Yang Mao on 5/24/18.
  * email: yang.mao@stud.hs-emden-leer.de
  */
-public class VSServerSlave implements Serializable, Runnable {
+public class VSServerSlave extends UnicastRemoteObject implements RmiServerInterface, Serializable, Runnable {
     private String name;
     private Timer heartbeat;
     private final int THREAD_SNOOZE = 1000;
@@ -15,7 +21,8 @@ public class VSServerSlave implements Serializable, Runnable {
     /*
         Create a server.
     */
-    public VSServerSlave(String name){
+    public VSServerSlave(String name) throws Exception{
+        super(0);
         this.name = name;
     }
     /*
@@ -62,6 +69,7 @@ public class VSServerSlave implements Serializable, Runnable {
         VSServerMaster.getInstance().receiveServer(this);
         System.out.println("Slave "+name+" start running!");
 
+
         while (!exit){
             try{
                 //10s
@@ -85,5 +93,9 @@ public class VSServerSlave implements Serializable, Runnable {
            exit = true;
         }
 
+    @Override
+    public String getMessage() throws RemoteException {
+        return "Hello From " + name;
     }
+}
 

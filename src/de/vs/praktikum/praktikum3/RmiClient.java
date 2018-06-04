@@ -16,21 +16,24 @@ public class RmiClient extends UnicastRemoteObject implements RmiServerInterface
     public RmiClient() throws RemoteException {
         super(0);
     }
-    public static void main(String[] args) throws Exception{
-        RmiServerInterface obj = (RmiServerInterface) Naming.lookup("//localhost/RmiServer");
-        System.out.println("Client Started");
-        System.out.println("Get the Message: " + obj.getMessage());
-    }
+//    public static void main(String[] args) throws Exception{
+////        RmiServerInterface obj = (RmiServerInterface) Naming.lookup("//localhost/RmiServer");
+////        System.out.println("Client Started");
+////        System.out.println("Get the Message: " + obj.getMessage());
+//    }
     public String getMessage(){
         return MESSAGE;
     }
     public void run(){
-        try{
-
-            RmiServerInterface obj = (RmiServerInterface) Naming.lookup("//localhost/RmiServer");
-        }catch (Exception e){
-            System.out.println("Naming.lookup failed");
-            e.printStackTrace();
+        while (true){
+            try{
+                RmiServerInterface obj = (RmiServerInterface) Naming.lookup("//localhost/RmiServer");
+                System.out.println("Client Started");
+                System.out.println("Get the Message: " + obj.getMessage());
+            }catch (Exception e){
+                System.out.println("Naming.lookup failed");
+                e.printStackTrace();
+            }
         }
 
     }
