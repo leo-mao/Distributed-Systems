@@ -1,18 +1,17 @@
 package de.vs.praktikum.praktikum2;
 
+import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Yang Mao on 5/24/18.
  * email: yang.mao@stud.hs-emden-leer.de
  */
-public class VSServerSlave extends Thread{
+public class VSServerSlave implements Serializable, Runnable {
     private String name;
     private Timer heartbeat;
-    int THREAD_SNOOZE = 1000;
-
-
+    private final int THREAD_SNOOZE = 1000;
+    private final int HEARTBEAT = 2 * THREAD_SNOOZE;
     /*
         Create a server.
     */
@@ -20,7 +19,7 @@ public class VSServerSlave extends Thread{
         this.name = name;
     }
     /*
-        Get server name
+        Get the server name
     */
     public String getServerName(){
         return name;
@@ -58,7 +57,7 @@ public class VSServerSlave extends Thread{
 
     public void run(){
         heartbeat = new Timer("heartbeat-"+name);
-        heartbeat.schedule(new HeartbeatTimerTask(name), 0,THREAD_SNOOZE * 2 );
+        heartbeat.schedule(new HeartbeatTimerTask(name), 0,HEARTBEAT);
 //      VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
         VSServerMaster.getInstance().receiveServer(this);
         System.out.println("Slave "+name+" start running!");
@@ -66,7 +65,7 @@ public class VSServerSlave extends Thread{
         while (!exit){
             try{
                 //10s
-               sleep(THREAD_SNOOZE);
+               Thread.sleep(THREAD_SNOOZE);
             }
             catch (Exception e){
                 e.printStackTrace();

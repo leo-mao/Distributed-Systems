@@ -9,17 +9,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Created by Yang Mao on 5/24/18.
  * email: yang.mao@stud.hs-emden-leer.de
  */
-public class VSServerMaster extends Thread{
+public class VSServerMaster implements Runnable{
     private static VSServerMaster instance = new VSServerMaster();
     private VSServerMaster(){}
     private ConcurrentLinkedQueue<Resource> resourceQueue = new ConcurrentLinkedQueue();
     static VSServerMaster getInstance(){
         return instance;
     }
-    int SLAVE_INACTIVE = 5000;
-    int SLAVE_DOWN = SLAVE_INACTIVE * 10;
-    int THREAD_SNOOZE = 1000;
-    int SHORT_SNOOZE = THREAD_SNOOZE / 5;
+    private final int SLAVE_INACTIVE = 5000;
+    private int SLAVE_DOWN = SLAVE_INACTIVE * 10;
+    private int THREAD_SNOOZE = 1000;
+    private int SHORT_SNOOZE = THREAD_SNOOZE / 5;
 
     /**
      *     resouceLocation contains <resource-id, serverObject> as value pairs.
@@ -100,10 +100,10 @@ public class VSServerMaster extends Thread{
                 if ((resource = resourceQueue.poll()) != null && availableServerList.size() > 0){
                         while (!assignResource(resource)){
                             // when assignment failed, sleep.
-                            sleep(SHORT_SNOOZE);
+                            Thread.sleep(SHORT_SNOOZE);
                         }
                 }
-                sleep(THREAD_SNOOZE/10);
+                Thread.sleep(THREAD_SNOOZE/10);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Sleep failed");
@@ -121,15 +121,16 @@ public class VSServerMaster extends Thread{
     }
 
     public void printResourceDistibution() {
-        System.out.format("%48s--> %16s \n", "ResourceID" ,"Servername");
+        System.out.format("%48s %16s\n","ResourceID","Server");
         for (String resourceId : resourceDistribution.keySet()) {
-            System.out.format("%48s-->%16s \n", resourceId ,resourceDistribution.get(resourceId).getServerName());
+            System.out.format("%48s--->%16s\n",resourceId,resourceDistribution.get(resourceId).getServerName());
+          // System.out.println(resourceId + "---------" + resourceDistribution.get(resourceId).getServerName());
         }
     }
 
 
     public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
-        long time = availableServerList.get(serverName).getTime() - SLAVE_DOWN;// 5000 * 10
+        long time = availableServerList.get(serverName).getTime() - SLAVE_DOWN;
         availableServerList.put(serverName,new Date(time));
         if(serverSlaveMap.keySet().size()!=(availableServerList.keySet().size())){
             serverSlaveMap.remove(serverName);
@@ -173,7 +174,7 @@ public class VSServerMaster extends Thread{
 
         if (lastHeartbeat == null){
             System.out.println(serverSlave.getServerName());
-            lastHeartbeat = new Date(new Date().getTime() - SLAVE_DOWN);//5000 * 10
+            lastHeartbeat = new Date(new Date().getTime() - SLAVE_DOWN);
             availableServerList.put(serverSlave.getServerName(), lastHeartbeat);
         }
         reassignResouces();
