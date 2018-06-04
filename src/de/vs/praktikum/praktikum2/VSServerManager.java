@@ -6,6 +6,8 @@ import java.io.*;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by Yang Mao on 5/25/18.
@@ -13,6 +15,7 @@ import java.util.*;
  */
 public class VSServerManager implements Runnable{
     private static VSServerManager instance = new VSServerManager();
+    private static Logger LOGGER = Logger.getLogger(VSServerManager.class.getName());
     private int ServerDefaultNameIndex = 0;
 
     public Map<String, VSServerSlave> getServerSlaveMap() {
@@ -30,6 +33,7 @@ public class VSServerManager implements Runnable{
     private VSServerManager(){
     }
     public static VSServerManager getInstance(){
+        LOGGER.log(Level.INFO, "Server Manager started!");
         return instance;
     }
     public void addServerSlave(){
@@ -58,7 +62,7 @@ public class VSServerManager implements Runnable{
             }
         }catch (Exception e) {
             e.printStackTrace();
-            System.out.println("add server slave failed !");
+            LOGGER.log(Level.WARNING, "add server slave failed!");
         }
     }
     public void addServerSlave(String serverName) {
@@ -69,7 +73,7 @@ public class VSServerManager implements Runnable{
                 new Thread(slave).start();
             }}catch(Exception e){
                 e.printStackTrace();
-                System.out.println("add server slave failed !");
+                LOGGER.log(Level.WARNING, "add server slave failed!");
             }
     }
 
@@ -128,11 +132,8 @@ public class VSServerManager implements Runnable{
             instance.readResourceList("resource");
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("read Resourcelist failed");
+            LOGGER.log(Level.WARNING, "Reading resource list failed!");
         }
-
-//        System.out.println(serverSlaveMap);
-
         while (true){
             Scanner s = new Scanner(System.in);
             String input = s.nextLine();
@@ -142,11 +143,11 @@ public class VSServerManager implements Runnable{
                     if (commands[1].equals("server")){
                         if(commands.length == 2) {
                             instance.addServerSlave();
-                            System.out.println("Add a server slave");
+                            LOGGER.log(Level.INFO, "Add a server slave!");
                         }
                         else if(commands.length == 3)instance.addServerSlave(commands[2]);
                         else {
-                            System.out.println("Add Server failed");
+                            LOGGER.log(Level.WARNING, "Add server slave failed!");
                             break;
                         }
                     }
@@ -154,7 +155,7 @@ public class VSServerManager implements Runnable{
                         if(commands.length == 2) instance.addResource();
                         else if(commands.length == 3){for (int i=0;i< Integer.parseInt(commands[2]);i++) instance.addResource(); }
                         else{
-                            System.out.println("Add Resource failed");
+                            LOGGER.log(Level.WARNING, "Add resource failed!");
                             break;
                         }
                     }
@@ -171,7 +172,7 @@ public class VSServerManager implements Runnable{
                     else if (commands[1].equals("resource")){
                         //TODO resource removal
                     }
-                    else System.out.println("Command not found!");
+                    else System.err.println("Command not found!");
                     break;
                 case "getall":
                     master.printResourceDistibution();
@@ -181,7 +182,7 @@ public class VSServerManager implements Runnable{
                     getMessage(commands[1]);
                     break;
                 default:
-                    System.out.println("Command not found!");
+                    System.err.println("Command not found!");
                     break;
             }
         }
@@ -211,16 +212,16 @@ public class VSServerManager implements Runnable{
 //            System.out.println("Client Started");
             System.out.println("Get the Message: " + obj.getMessage());
         }catch (Exception e){
-            System.out.println("Naming.lookup failed");
+            LOGGER.log(Level.WARNING, "Naming.lookup failed!");
             e.printStackTrace();
         }
     }
     public static void main(String[] args) throws IOException {
+        LOGGER.setLevel(Level.WARNING);
         VSServerMaster master = VSServerMaster.getInstance();
         VSServerManager instance = VSServerManager.getInstance();
         LocateRegistry.createRegistry(1099);
-        System.out.println("Java RMI registry created.");
-
+        LOGGER.log(Level.INFO, "Java RMI registry created.");
         Thread vsServerMaster =  new Thread(master);
         Thread vsServerManager = new Thread(instance);
         vsServerMaster.start();
@@ -231,8 +232,6 @@ public class VSServerManager implements Runnable{
             e.printStackTrace();
         }
         vsServerManager.start();
-        //Have 3 Server at the beginning
-
     }
 
 

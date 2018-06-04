@@ -4,6 +4,8 @@ import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by Yang Mao on 5/24/18.
@@ -11,6 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class VSServerMaster implements Runnable{
     private static VSServerMaster instance = new VSServerMaster();
+    private static Logger LOGGER = Logger.getLogger(VSServerMaster.class.getName());
     private VSServerMaster(){}
     private ConcurrentLinkedQueue<Resource> resourceQueue = new ConcurrentLinkedQueue();
     static VSServerMaster getInstance(){
@@ -51,7 +54,7 @@ public class VSServerMaster implements Runnable{
                 }
             }catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Slave register failed");
+            LOGGER.log(Level.WARNING, "Slave register failed");
         }
     }
 
@@ -73,13 +76,13 @@ public class VSServerMaster implements Runnable{
                     }
                 }
                 else {// No server slave available
-                    System.out.println("No server Slave available!");
+                    LOGGER.log(Level.WARNING, "No server Slave available");
                     return false;
                 }
            }catch (Exception e) {
                e.printStackTrace();
-               System.out.println("assignResource failed!");
-           }
+                LOGGER.log(Level.WARNING, "Resource assignment failed!");
+            }
            return true;
     }
 
@@ -106,7 +109,7 @@ public class VSServerMaster implements Runnable{
                 Thread.sleep(THREAD_SNOOZE/10);
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Sleep failed");
+                LOGGER.log(Level.WARNING, "Sleep failed");
             }
         }
     }
@@ -184,4 +187,3 @@ public class VSServerMaster implements Runnable{
 
 
 //TODO Exception
-//TODO LOG

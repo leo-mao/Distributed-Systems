@@ -4,10 +4,10 @@ import de.vs.praktikum.praktikum3.RmiServerInterface;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by Yang Mao on 5/24/18.
@@ -18,6 +18,7 @@ public class VSServerSlave extends UnicastRemoteObject implements RmiServerInter
     private Timer heartbeat;
     private final int THREAD_SNOOZE = 1000;
     private final int HEARTBEAT = 2 * THREAD_SNOOZE;
+    private final Logger LOGGER = Logger.getLogger(VSServerSlave.class.getName());
     /*
         Create a server.
     */
@@ -35,7 +36,7 @@ public class VSServerSlave extends UnicastRemoteObject implements RmiServerInter
     A HashMap saves resources with index of resouce-ids.
      */
     private boolean exit = false;
-    private Map<String, Resource> resourceHashMap = new HashMap<String, Resource>();
+    private Map<String, Resource> resourceHashMap = new HashMap<>();
     public Map<String, Resource> getResourceHashMap(){
         return resourceHashMap;
     }
@@ -52,7 +53,7 @@ public class VSServerSlave extends UnicastRemoteObject implements RmiServerInter
         return false;
     }
     public Set<Resource> getResourceSet() {
-        return new HashSet<Resource>(resourceHashMap.values());
+        return new HashSet<>(resourceHashMap.values());
     }
 
     public Resource getResouce(String id){
@@ -67,8 +68,7 @@ public class VSServerSlave extends UnicastRemoteObject implements RmiServerInter
         heartbeat.schedule(new HeartbeatTimerTask(name), 0,HEARTBEAT);
 //      VSServerMaster.getInstance().getServerSlaveMap().put(name , this);
         VSServerMaster.getInstance().receiveServer(this);
-        System.out.println("Slave "+name+" start running!");
-
+        LOGGER.log(Level.INFO, "Slave "+name+" start running!");
 
         while (!exit){
             try{
@@ -77,7 +77,7 @@ public class VSServerSlave extends UnicastRemoteObject implements RmiServerInter
             }
             catch (Exception e){
                 e.printStackTrace();
-                System.out.println(getServerName()+":"+"sleep failed!");
+                LOGGER.log(Level.WARNING,getServerName()+":"+"sleep failed!");
             }
 
         }
@@ -94,7 +94,7 @@ public class VSServerSlave extends UnicastRemoteObject implements RmiServerInter
         }
 
     @Override
-    public String getMessage() throws RemoteException {
+    public String getMessage() {
         return "Hello From " + name;
     }
 }
