@@ -103,7 +103,7 @@ public class VSServerMaster extends Thread{
                             sleep(SHORT_SNOOZE);
                         }
                 }
-                sleep(THREAD_SNOOZE);
+                sleep(THREAD_SNOOZE/10);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Sleep failed");
@@ -121,15 +121,15 @@ public class VSServerMaster extends Thread{
     }
 
     public void printResourceDistibution() {
-        System.out.println("-------ResourceID-------Servername---- " + df.format(new Date()) + "-----");
+        System.out.format("%48s--> %16s \n", "ResourceID" ,"Servername");
         for (String resourceId : resourceDistribution.keySet()) {
-            System.out.println(resourceId + "---------" + resourceDistribution.get(resourceId).getServerName());
+            System.out.format("%48s-->%16s \n", resourceId ,resourceDistribution.get(resourceId).getServerName());
         }
     }
 
 
     public void receiveResource(List<Resource> resourceList,String serverName) throws InterruptedException {
-        long time = availableServerList.get(serverName).getTime() - SLAVE_DOWN;
+        long time = availableServerList.get(serverName).getTime() - SLAVE_DOWN;// 5000 * 10
         availableServerList.put(serverName,new Date(time));
         if(serverSlaveMap.keySet().size()!=(availableServerList.keySet().size())){
             serverSlaveMap.remove(serverName);
@@ -173,7 +173,7 @@ public class VSServerMaster extends Thread{
 
         if (lastHeartbeat == null){
             System.out.println(serverSlave.getServerName());
-            lastHeartbeat = new Date(new Date().getTime() - SLAVE_DOWN);
+            lastHeartbeat = new Date(new Date().getTime() - SLAVE_DOWN);//5000 * 10
             availableServerList.put(serverSlave.getServerName(), lastHeartbeat);
         }
         reassignResouces();

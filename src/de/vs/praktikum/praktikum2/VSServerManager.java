@@ -156,7 +156,7 @@ public class VSServerManager extends Thread{
                     break;
                 case "getall":
                     master.printResourceDistibution();
-                    System.out.println(serverSlaveMap);
+                    //System.out.println(serverSlaveMap);
                     break;
 //                case "available":
 //                    master.getAvailableServer();
