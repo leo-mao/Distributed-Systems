@@ -7,7 +7,7 @@ import java.util.*;
  * Created by Yang Mao on 5/24/18.
  * email: yang.mao@stud.hs-emden-leer.de
  */
-public class VSServerSlave extends Thread implements Serializable {
+public class VSServerSlave implements Serializable, Runnable {
     private String name;
     private Timer heartbeat;
     private final int THREAD_SNOOZE = 1000;
@@ -65,7 +65,7 @@ public class VSServerSlave extends Thread implements Serializable {
         while (!exit){
             try{
                 //10s
-               sleep(THREAD_SNOOZE);
+               Thread.sleep(THREAD_SNOOZE);
             }
             catch (Exception e){
                 e.printStackTrace();

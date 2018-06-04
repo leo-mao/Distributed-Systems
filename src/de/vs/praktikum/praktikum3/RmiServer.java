@@ -9,8 +9,8 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.*;
-public class RmiServer extends UnicastRemoteObject implements RmiServerInterface{
-    public static final String MESSAGE= "Hello World";
+public class RmiServer extends UnicastRemoteObject implements RmiServerInterface, Runnable{
+    public static final String MESSAGE= "From Server: Hello World";
     public RmiServer() throws RemoteException {
         super(0);
     }
@@ -19,6 +19,9 @@ public class RmiServer extends UnicastRemoteObject implements RmiServerInterface
         return MESSAGE;
     }
 
+    public void run(){
+
+    }
     public static void main(String args[]) throws Exception{
         System.out.println("RMI Server started");
         try{
