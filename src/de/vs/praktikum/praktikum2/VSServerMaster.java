@@ -16,10 +16,10 @@ public class VSServerMaster extends Thread{
     static VSServerMaster getInstance(){
         return instance;
     }
-    int SLAVE_INACTIVE = 5000;
-    int SLAVE_DOWN = SLAVE_INACTIVE * 10;
-    int THREAD_SNOOZE = 1000;
-    int SHORT_SNOOZE = THREAD_SNOOZE / 5;
+    private final int SLAVE_INACTIVE = 5000;
+    private int SLAVE_DOWN = SLAVE_INACTIVE * 10;
+    private int THREAD_SNOOZE = 1000;
+    private int SHORT_SNOOZE = THREAD_SNOOZE / 5;
 
     /**
      *     resouceLocation contains <resource-id, serverObject> as value pairs.
