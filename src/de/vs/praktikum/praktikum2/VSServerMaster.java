@@ -103,7 +103,7 @@ public class VSServerMaster implements Runnable{
                             Thread.sleep(SHORT_SNOOZE);
                         }
                 }
-                Thread.sleep(THREAD_SNOOZE);
+                Thread.sleep(THREAD_SNOOZE/10);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Sleep failed");
@@ -121,9 +121,10 @@ public class VSServerMaster implements Runnable{
     }
 
     public void printResourceDistibution() {
-        System.out.println("-------ResourceID-------Servername---- " + df.format(new Date()) + "-----");
+        System.out.format("%48s %16s\n","ResourceID","Server");
         for (String resourceId : resourceDistribution.keySet()) {
-            System.out.println(resourceId + "---------" + resourceDistribution.get(resourceId).getServerName());
+            System.out.format("%48s--->%16s\n",resourceId,resourceDistribution.get(resourceId).getServerName());
+          // System.out.println(resourceId + "---------" + resourceDistribution.get(resourceId).getServerName());
         }
     }
 

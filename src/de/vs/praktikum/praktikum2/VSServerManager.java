@@ -32,7 +32,6 @@ public class VSServerManager implements Runnable{
     public static VSServerManager getInstance(){
         return instance;
     }
-
     public void addServerSlave(){
         ServerDefaultNameIndex++;
         String serverName = "ns"+ ServerDefaultNameIndex +".example.com";
