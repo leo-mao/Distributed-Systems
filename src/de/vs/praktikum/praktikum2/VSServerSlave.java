@@ -12,7 +12,6 @@ public class VSServerSlave extends Thread implements Serializable {
     private Timer heartbeat;
     private final int THREAD_SNOOZE = 1000;
     private final int HEARTBEAT = 2 * THREAD_SNOOZE;
-
     /*
         Create a server.
     */

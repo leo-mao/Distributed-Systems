@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Created by Yang Mao on 5/24/18.
  * email: yang.mao@stud.hs-emden-leer.de
  */
-public class VSServerMaster extends Thread{
+public class VSServerMaster implements Runnable{
     private static VSServerMaster instance = new VSServerMaster();
     private VSServerMaster(){}
     private ConcurrentLinkedQueue<Resource> resourceQueue = new ConcurrentLinkedQueue();
@@ -100,10 +100,10 @@ public class VSServerMaster extends Thread{
                 if ((resource = resourceQueue.poll()) != null && availableServerList.size() > 0){
                         while (!assignResource(resource)){
                             // when assignment failed, sleep.
-                            sleep(SHORT_SNOOZE);
+                            Thread.sleep(SHORT_SNOOZE);
                         }
                 }
-                sleep(THREAD_SNOOZE);
+                Thread.sleep(THREAD_SNOOZE);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Sleep failed");

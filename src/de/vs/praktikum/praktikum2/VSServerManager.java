@@ -7,7 +7,7 @@ import java.util.*;
  * Created by Yang Mao on 5/25/18.
  * email: yang.mao@stud.hs-emden-leer.de
  */
-public class VSServerManager extends Thread{
+public class VSServerManager implements Runnable{
     private static VSServerManager instance = new VSServerManager();
     private int ServerDefaultNameIndex = 0;
 
@@ -198,15 +198,16 @@ public class VSServerManager extends Thread{
     public static void main(String[] args) throws IOException {
         VSServerMaster master = VSServerMaster.getInstance();
         VSServerManager instance = VSServerManager.getInstance();
-        master.start();
+        Thread vsServerMaster =  new Thread(master);
+        Thread vsServerManager = new Thread(instance);
+        vsServerMaster.start();
         for(int i=0; i<3; i++) {instance.addServerSlave();}
-
         try {
-            sleep(3000);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        instance.start();
+        vsServerManager.start();
         //Have 3 Server at the beginning
 
     }
