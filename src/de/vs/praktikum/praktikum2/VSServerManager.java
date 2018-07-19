@@ -179,6 +179,10 @@ public class VSServerManager implements Runnable{
                     System.out.println(serverSlaveMap);
                     break;
                 case "message":
+                    if (commands.length < 2){
+                        System.err.println("Command not complete!");
+                        break;
+                    }
                     getMessage(commands[1]);
                     break;
                 default:
